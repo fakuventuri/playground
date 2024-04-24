@@ -5,6 +5,8 @@ use bevy::{
     window::{CursorGrabMode, PrimaryWindow},
 };
 
+const MOUSE_SENSITIVITY: f32 = 0.65;
+
 pub struct PlayerPlugin;
 
 #[derive(Component)]
@@ -108,8 +110,6 @@ fn move_player(
     // println!("Player pos: {}", player_transform.translation);
 }
 
-const SENSITIVITY: f32 = 1.;
-
 fn mouse_motion(
     mut motion_evr: EventReader<MouseMotion>,
     mut camera_q: Query<&mut Transform, (With<MainCamera>, Without<Player>)>,
@@ -137,8 +137,8 @@ fn mouse_motion(
 
         let (mut yaw, mut pitch, _) = camera_transform.rotation.to_euler(EulerRot::YXZ);
 
-        pitch -= rotation_move.y / window_scale * std::f32::consts::PI;
-        yaw -= rotation_move.x / window_scale * std::f32::consts::PI;
+        pitch -= rotation_move.y / window_scale * std::f32::consts::PI * MOUSE_SENSITIVITY;
+        yaw -= rotation_move.x / window_scale * std::f32::consts::PI * MOUSE_SENSITIVITY;
         pitch = pitch.clamp(-1.54, 1.54); // 1.54 recomended // I reached aprox 1.57
         camera_transform.rotation =
             Quat::from_axis_angle(Vec3::Y, yaw) * Quat::from_axis_angle(Vec3::X, pitch);

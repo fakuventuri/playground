@@ -1,5 +1,6 @@
 // mod trail_plugin;
 mod common;
+mod hud;
 mod player;
 mod utils;
 
@@ -7,6 +8,7 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 use common::CommonPlugin;
+use hud::HUDPlugin;
 use player::PlayerPlugin;
 use rand::Rng;
 // use trail_plugin::{Trailed, Trailplugin};
@@ -22,6 +24,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(CommonPlugin)
         .add_plugins(PlayerPlugin)
+        .add_plugins(HUDPlugin)
         // .add_plugins(Trailplugin)
         .add_systems(Startup, (setup, setup_planets))
         .add_systems(
