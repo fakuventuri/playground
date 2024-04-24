@@ -47,7 +47,7 @@ fn setup_player(mut commands: Commands) {
             player: Player { speed: 500. },
             // transform: Transform::from_xyz(0., 0., 750.),
         })
-        .insert(Transform::from_xyz(0., 0., 750.));
+        .insert(Transform::from_xyz(0., -250., 750.));
 }
 
 fn camera_follow_player(
@@ -76,36 +76,36 @@ fn move_player(
     let (mut player_transform, player) = player_q.single_mut();
     let camera_transform = camera_q.single();
 
-    // let mut velocity = Vec3::ZERO;
+    let mut movement = Vec3::ZERO;
 
     if keyboard_input.pressed(KeyCode::KeyW) {
-        player_transform.translation +=
-            camera_transform.forward() * player.speed * time.delta_seconds();
+        movement += camera_transform.forward() * 1.;
     }
 
     if keyboard_input.pressed(KeyCode::KeyS) {
-        player_transform.translation +=
-            camera_transform.back() * player.speed * time.delta_seconds();
+        movement += camera_transform.back() * 1.;
     }
 
     if keyboard_input.pressed(KeyCode::KeyD) {
-        player_transform.translation +=
-            camera_transform.right() * player.speed * time.delta_seconds();
+        movement += camera_transform.right() * 1.;
     }
 
     if keyboard_input.pressed(KeyCode::KeyA) {
-        player_transform.translation +=
-            camera_transform.left() * player.speed * time.delta_seconds();
+        movement += camera_transform.left() * 1.;
     }
 
     if keyboard_input.pressed(KeyCode::Space) {
-        player_transform.translation += camera_transform.up() * player.speed * time.delta_seconds();
+        // movement += camera_transform.up() * 1.;
+        movement += Vec3::Y;
     }
 
     if keyboard_input.pressed(KeyCode::ControlLeft) {
-        player_transform.translation +=
-            camera_transform.down() * player.speed * time.delta_seconds();
+        // movement += camera_transform.down() * 1.;
+        movement -= Vec3::Y;
     }
+
+    player_transform.translation +=
+        movement.normalize_or_zero() * player.speed * time.delta_seconds();
 
     // println!("Player pos: {}", player_transform.translation);
 }
@@ -115,15 +115,14 @@ fn mouse_motion(
     mut camera_q: Query<&mut Transform, (With<MainCamera>, Without<Player>)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let mut rotation_move = Vec2::ZERO;
     let primary_window = window_query.single();
 
-    match primary_window.cursor.grab_mode {
-        CursorGrabMode::Locked => {}
-        _ => {
-            return;
-        }
+    if let CursorGrabMode::Locked = primary_window.cursor.grab_mode {
+    } else {
+        return;
     }
+
+    let mut rotation_move = Vec2::ZERO;
 
     for ev in motion_evr.read() {
         // println!("Mouse moved: X: {} px, Y: {} px", ev.delta.x, ev.delta.y);
@@ -139,7 +138,7 @@ fn mouse_motion(
 
         pitch -= rotation_move.y / window_scale * std::f32::consts::PI * MOUSE_SENSITIVITY;
         yaw -= rotation_move.x / window_scale * std::f32::consts::PI * MOUSE_SENSITIVITY;
-        pitch = pitch.clamp(-1.54, 1.54); // 1.54 recomended // I reached aprox 1.57
+        pitch = pitch.clamp(-1.57, 1.57); // 1.54 recomended // I reached aprox 1.57
         camera_transform.rotation =
             Quat::from_axis_angle(Vec3::Y, yaw) * Quat::from_axis_angle(Vec3::X, pitch);
     }

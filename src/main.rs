@@ -49,8 +49,8 @@ fn setup(
     // Point Light
     commands
         .spawn(PointLightBundle {
-            // transform: Transform::from_xyz(5.0, 8.0, 2.0),
-            transform: Transform::from_xyz(0.0, 250.0, 0.0),
+            // transform: Transform::from_xyz(0.0, 250.0, 0.0),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
             point_light: PointLight {
                 intensity: 1_000_000_000.0,
                 color: Color::WHITE,
@@ -150,6 +150,19 @@ fn setup_planets(
         Transform::from_xyz(-175.0, -130.0, -100.0),
         None,
     ));
+
+    // ground plane
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Plane3d::default().mesh().size(1000.0, 1000.0)),
+        material: materials.add(StandardMaterial {
+            base_color: Color::GRAY,
+            // metallic: 1.,
+            cull_mode: None,
+            ..Default::default()
+        }),
+        transform: Transform::from_xyz(0., -450., 0.),
+        ..default()
+    });
 }
 
 fn calculate_velocity(time: Res<Time>, mut planets_query: Query<(&Transform, &mut Planet)>) {
