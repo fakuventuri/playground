@@ -43,7 +43,7 @@ fn setup(
     // Ambient Light
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
-        brightness: 5.0,
+        brightness: 10.0,
     });
 
     // Point Light
@@ -109,20 +109,20 @@ fn setup_planets(
     //     // .insert(Trailed::new())
     //     ;
 
-    for _ in 0..500 {
-        let x = rand::thread_rng().gen_range(-400f32..400f32);
-        let y = rand::thread_rng().gen_range(-400f32..400f32);
-        let z = rand::thread_rng().gen_range(-400f32..400f32);
+    // for _ in 0..500 {
+    //     let x = rand::thread_rng().gen_range(-400f32..400f32);
+    //     let y = rand::thread_rng().gen_range(-400f32..400f32);
+    //     let z = rand::thread_rng().gen_range(-400f32..400f32);
 
-        commands.spawn(PlanetBundle::new(
-            &mut meshes,
-            300.,
-            100.,
-            materials.add(Color::SILVER),
-            Transform::from_xyz(x, y, z),
-            None,
-        ));
-    }
+    //     commands.spawn(PlanetBundle::new(
+    //         &mut meshes,
+    //         2500.,
+    //         2.,
+    //         materials.add(Color::SILVER),
+    //         Transform::from_xyz(x, y, z),
+    //         None,
+    //     ));
+    // }
 
     commands.spawn(PlanetBundle::new(
         &mut meshes,
@@ -138,7 +138,7 @@ fn setup_planets(
         3000.,
         10.,
         materials.add(Color::GREEN),
-        Transform::from_xyz(175.0, -13.0, 150.0),
+        Transform::from_xyz(125.0, -13.0, 100.0),
         None,
     ));
 
@@ -207,15 +207,10 @@ fn calculate_acceleration_velocity(
 
         let mut f = GRAVITY_CONSTANT / (distance_sq / (SIZE_SCALE * DISTANCE_SCALE).powi(2));
 
-        let distance = distance_sq.sqrt();
-        if distance < (planet1.radius + planet2.radius) * SIZE_SCALE {
-            f = f * (distance / (planet1.radius + planet2.radius) * SIZE_SCALE);
-        }
-
         // Collision
         if distance_sq < ((planet1.radius + planet2.radius) * SIZE_SCALE).powf(2.) {
             // f = f * (distance_sq / ((planet1.radius + planet2.radius) * SIZE_SCALE).powi(2));
-            f = -f;
+            f = -f / 10.;
         }
 
         let force_unit_mass = delta.normalize_or_zero() * f;
