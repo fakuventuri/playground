@@ -15,7 +15,13 @@ impl Plugin for CommonPlugin {
         #[cfg(debug_assertions)]
         {
             // add debug_exit_with_ctrl_w system to debug mode
-            app.add_systems(Update, (bevy::window::close_on_esc, debug_exit_with_ctrl_w));
+            app.add_systems(
+                Update,
+                (
+                    bevy::window::close_on_esc,
+                    // debug_exit_with_ctrl_w
+                ),
+            );
 
             // use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
             // app.add_plugins((
@@ -35,6 +41,7 @@ pub enum ScreenMode {
     BorderlessFullscreen,
 }
 
+#[allow(dead_code)]
 fn debug_exit_with_ctrl_w(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut app_exit_events: EventWriter<AppExit>,
