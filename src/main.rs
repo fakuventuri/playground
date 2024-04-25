@@ -127,8 +127,16 @@ fn setup_planets(
     commands.spawn(PlanetBundle::new(
         &mut meshes,
         3000.,
-        10.,
-        materials.add(Color::RED),
+        8.,
+        materials.add(StandardMaterial {
+            base_color: Color::RED,
+            specular_transmission: 0.9,
+            diffuse_transmission: 1.0,
+            thickness: 1.8,
+            ior: 1.5,
+            perceptual_roughness: 0.12,
+            ..default()
+        }),
         Transform::from_xyz(-275.0, 13.0, 10.0),
         None,
     ));
@@ -136,8 +144,16 @@ fn setup_planets(
     commands.spawn(PlanetBundle::new(
         &mut meshes,
         3000.,
-        10.,
-        materials.add(Color::GREEN),
+        8.,
+        materials.add(StandardMaterial {
+            base_color: Color::GREEN,
+            specular_transmission: 0.9,
+            diffuse_transmission: 1.0,
+            thickness: 1.8,
+            ior: 1.5,
+            perceptual_roughness: 0.12,
+            ..default()
+        }),
         Transform::from_xyz(125.0, -13.0, 100.0),
         None,
     ));
@@ -145,22 +161,30 @@ fn setup_planets(
     commands.spawn(PlanetBundle::new(
         &mut meshes,
         3000.,
-        10.,
-        materials.add(Color::BLUE),
+        8.,
+        materials.add(StandardMaterial {
+            base_color: Color::BLUE,
+            specular_transmission: 0.9,
+            diffuse_transmission: 1.0,
+            thickness: 1.8,
+            ior: 1.5,
+            perceptual_roughness: 0.12,
+            ..default()
+        }),
         Transform::from_xyz(-175.0, -130.0, -100.0),
         None,
     ));
 
     // ground plane
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Plane3d::default().mesh().size(1000.0, 1000.0)),
+        mesh: meshes.add(Plane3d::default().mesh().size(10000.0, 10000.0)),
         material: materials.add(StandardMaterial {
             base_color: Color::GRAY,
             // metallic: 1.,
             cull_mode: None,
             ..Default::default()
         }),
-        transform: Transform::from_xyz(0., -450., 0.),
+        transform: Transform::from_xyz(0., -500., 0.),
         ..default()
     });
 }
@@ -210,7 +234,8 @@ fn calculate_acceleration_velocity(
         // Collision
         if distance_sq < ((planet1.radius + planet2.radius) * SIZE_SCALE).powf(2.) {
             // f = f * (distance_sq / ((planet1.radius + planet2.radius) * SIZE_SCALE).powi(2));
-            f = -f / 10.;
+            // f = -f / 10.;
+            f = 0.;
         }
 
         let force_unit_mass = delta.normalize_or_zero() * f;
