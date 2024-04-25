@@ -11,7 +11,7 @@ pub struct PlayerPlugin;
 
 #[derive(Component)]
 pub struct Player {
-    speed: f32,
+    base_speed: f32,
 }
 
 #[derive(Bundle)]
@@ -44,7 +44,7 @@ fn setup_camera(mut commands: Commands) {
 fn setup_player(mut commands: Commands) {
     commands
         .spawn(PlayerBundle {
-            player: Player { speed: 500. },
+            player: Player { base_speed: 500. },
             // transform: Transform::from_xyz(0., 0., 750.),
         })
         .insert(Transform::from_xyz(0., -250., 750.));
@@ -76,6 +76,7 @@ fn move_player(
     let (mut player_transform, player) = player_q.single_mut();
     let camera_transform = camera_q.single();
 
+    let mut speed = player.base_speed;
     let mut movement = Vec3::ZERO;
 
     if keyboard_input.pressed(KeyCode::KeyW) {
@@ -104,8 +105,11 @@ fn move_player(
         movement -= Vec3::Y;
     }
 
-    player_transform.translation +=
-        movement.normalize_or_zero() * player.speed * time.delta_seconds();
+    if keyboard_input.pressed(KeyCode::ShiftLeft) {
+        speed *= 2.;
+    }
+
+    player_transform.translation += movement.normalize_or_zero() * speed * time.delta_seconds();
 
     // println!("Player pos: {}", player_transform.translation);
 }
