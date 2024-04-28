@@ -46,44 +46,60 @@ fn setup(
         brightness: 10.0,
     });
 
-    // Point Light
-    commands
-        .spawn(PointLightBundle {
-            // transform: Transform::from_xyz(0.0, 250.0, 0.0),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            point_light: PointLight {
-                intensity: 1_000_000_000.0,
-                color: Color::WHITE,
-                shadows_enabled: true,
-                range: 15000.,
-                ..default()
-            },
-            ..default()
-        })
-        .with_children(|builder| {
-            builder.spawn(PbrBundle {
-                mesh: meshes.add(Sphere::new(5.).mesh().ico(5).unwrap()),
-                material: materials.add(StandardMaterial {
-                    base_color: Color::WHITE,
-                    // emissive: Color::rgb(5., 5., 5.),
-                    unlit: true,
+    let light_pos = [
+        Vec3::new(0., 0., 0.),
+        Vec3::new(500., 100., 500.),
+        Vec3::new(-500., 100., -500.),
+        Vec3::new(-500., 100., 500.),
+        Vec3::new(500., 100., -500.),
+    ];
+
+    for pos in light_pos {
+        // Point Light
+        commands
+            .spawn(PointLightBundle {
+                // transform: Transform::from_xyz(0.0, 250.0, 0.0),
+                transform: Transform::from_translation(pos),
+                point_light: PointLight {
+                    intensity: 1_000_000_000.0,
+                    color: Color::WHITE,
+                    shadows_enabled: true,
+                    range: 15000.,
                     ..default()
-                }),
+                },
                 ..default()
+            })
+            .with_children(|builder| {
+                builder.spawn(PbrBundle {
+                    mesh: meshes.add(Sphere::new(5.).mesh().ico(5).unwrap()),
+                    material: materials.add(StandardMaterial {
+                        base_color: Color::WHITE,
+                        // emissive: Color::rgb(5., 5., 5.),
+                        unlit: true,
+                        ..default()
+                    }),
+                    ..default()
+                });
             });
-        });
+    }
 }
 
 fn setup_planets(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    // mut images: ResMut<Assets<Image>>,
+    mut images: ResMut<Assets<Image>>,
 ) {
-    // let debug_material = StandardMaterial {
-    //     base_color_texture: Some(images.add(uv_debug_texture())),
-    //     ..default()
-    // };
+    let debug_material = StandardMaterial {
+        base_color_texture: Some(images.add(uv_debug_texture())),
+        cull_mode: None,
+        specular_transmission: 0.9,
+        diffuse_transmission: 1.0,
+        thickness: 1.8,
+        ior: 1.5,
+        perceptual_roughness: 0.12,
+        ..default()
+    };
 
     // commands.spawn(PlanetBundle::new(
     //     &mut meshes,
@@ -109,20 +125,20 @@ fn setup_planets(
     //     // .insert(Trailed::new())
     //     ;
 
-    // for _ in 0..500 {
-    //     let x = rand::thread_rng().gen_range(-400f32..400f32);
-    //     let y = rand::thread_rng().gen_range(-400f32..400f32);
-    //     let z = rand::thread_rng().gen_range(-400f32..400f32);
+    for _ in 0..500 {
+        let x = rand::thread_rng().gen_range(-400f32..400f32);
+        let y = rand::thread_rng().gen_range(-400f32..400f32);
+        let z = rand::thread_rng().gen_range(-400f32..400f32);
 
-    //     commands.spawn(PlanetBundle::new(
-    //         &mut meshes,
-    //         2500.,
-    //         2.,
-    //         materials.add(Color::SILVER),
-    //         Transform::from_xyz(x, y, z),
-    //         None,
-    //     ));
-    // }
+        commands.spawn(PlanetBundle::new(
+            &mut meshes,
+            2500.,
+            2.,
+            materials.add(Color::WHITE),
+            Transform::from_xyz(x, y, z),
+            None,
+        ));
+    }
 
     commands.spawn(PlanetBundle::new(
         &mut meshes,
@@ -178,13 +194,22 @@ fn setup_planets(
     // ground plane
     commands.spawn(PbrBundle {
         mesh: meshes.add(Plane3d::default().mesh().size(10000.0, 10000.0)),
-        material: materials.add(StandardMaterial {
-            base_color: Color::GRAY,
-            // metallic: 1.,
-            cull_mode: None,
-            ..Default::default()
-        }),
+        // material: materials.add(StandardMaterial {
+        //     base_color: Color::GRAY,
+        //     // metallic: 1.,
+        //     cull_mode: None,
+        //     ..Default::default()
+        // }),
+        material: materials.add(debug_material.clone()),
         transform: Transform::from_xyz(0., -500., 0.),
+        ..default()
+    });
+
+    // ceiling plane
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Plane3d::default().mesh().size(10000.0, 10000.0)),
+        material: materials.add(debug_material.clone()),
+        transform: Transform::from_xyz(0., 2500., 0.),
         ..default()
     });
 }
