@@ -21,6 +21,10 @@ const TIME_SPEED: f32 = 2332.800; // moon orbit 27 days = 2332800s / 10 for 10 s
 fn main() {
     App::new() //
         .insert_resource(ClearColor(Color::rgb(0., 0., 0.)))
+        .insert_resource(GameSpeed {
+            speed: 1.,
+            last_speed: 1.,
+        })
         .add_plugins(DefaultPlugins)
         .add_plugins(CommonPlugin)
         .add_plugins(PlayerPlugin)
@@ -32,6 +36,7 @@ fn main() {
             (velocity_verlet, calculate_acceleration_velocity).chain(),
         )
         // .add_systems(FixedUpdate, (calculate_velocity, move_planets).chain())
+        .add_systems(Update, (toggle_pause, change_speed, spawn_planet_key))
         .run();
 }
 
@@ -46,44 +51,60 @@ fn setup(
         brightness: 10.0,
     });
 
-    // Point Light
-    commands
-        .spawn(PointLightBundle {
-            // transform: Transform::from_xyz(0.0, 250.0, 0.0),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            point_light: PointLight {
-                intensity: 1_000_000_000.0,
-                color: Color::WHITE,
-                shadows_enabled: true,
-                range: 15000.,
-                ..default()
-            },
-            ..default()
-        })
-        .with_children(|builder| {
-            builder.spawn(PbrBundle {
-                mesh: meshes.add(Sphere::new(5.).mesh().ico(5).unwrap()),
-                material: materials.add(StandardMaterial {
-                    base_color: Color::WHITE,
-                    // emissive: Color::rgb(5., 5., 5.),
-                    unlit: true,
+    let light_pos = [
+        Vec3::new(0., 0., 0.),
+        Vec3::new(500., 100., 500.),
+        Vec3::new(-500., 100., -500.),
+        Vec3::new(-500., 100., 500.),
+        Vec3::new(500., 100., -500.),
+    ];
+
+    for pos in light_pos {
+        // Point Light
+        commands
+            .spawn(PointLightBundle {
+                // transform: Transform::from_xyz(0.0, 250.0, 0.0),
+                transform: Transform::from_translation(pos),
+                point_light: PointLight {
+                    intensity: 1_000_000_000.0,
+                    color: Color::WHITE,
+                    shadows_enabled: true,
+                    range: 15000.,
                     ..default()
-                }),
+                },
                 ..default()
+            })
+            .with_children(|builder| {
+                builder.spawn(PbrBundle {
+                    mesh: meshes.add(Sphere::new(5.).mesh().ico(5).unwrap()),
+                    material: materials.add(StandardMaterial {
+                        base_color: Color::WHITE,
+                        // emissive: Color::rgb(5., 5., 5.),
+                        unlit: true,
+                        ..default()
+                    }),
+                    ..default()
+                });
             });
-        });
+    }
 }
 
 fn setup_planets(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    // mut images: ResMut<Assets<Image>>,
+    mut images: ResMut<Assets<Image>>,
 ) {
-    // let debug_material = StandardMaterial {
-    //     base_color_texture: Some(images.add(uv_debug_texture())),
-    //     ..default()
-    // };
+    let debug_material = StandardMaterial {
+        base_color_texture: Some(images.add(uv_debug_texture())),
+        cull_mode: None,
+        specular_transmission: 0.9,
+        diffuse_transmission: 1.0,
+        thickness: 1.8,
+        ior: 1.5,
+        perceptual_roughness: 0.12,
+        ..default()
+    };
 
     // commands.spawn(PlanetBundle::new(
     //     &mut meshes,
@@ -118,7 +139,7 @@ fn setup_planets(
     //         &mut meshes,
     //         2500.,
     //         2.,
-    //         materials.add(Color::SILVER),
+    //         materials.add(Color::WHITE),
     //         Transform::from_xyz(x, y, z),
     //         None,
     //     ));
@@ -178,48 +199,32 @@ fn setup_planets(
     // ground plane
     commands.spawn(PbrBundle {
         mesh: meshes.add(Plane3d::default().mesh().size(10000.0, 10000.0)),
-        material: materials.add(StandardMaterial {
-            base_color: Color::GRAY,
-            // metallic: 1.,
-            cull_mode: None,
-            ..Default::default()
-        }),
+        // material: materials.add(StandardMaterial {
+        //     base_color: Color::GRAY,
+        //     // metallic: 1.,
+        //     cull_mode: None,
+        //     ..Default::default()
+        // }),
+        material: materials.add(debug_material.clone()),
         transform: Transform::from_xyz(0., -500., 0.),
         ..default()
     });
-}
 
-fn calculate_velocity(time: Res<Time>, mut planets_query: Query<(&Transform, &mut Planet)>) {
-    let mut iter = planets_query.iter_combinations_mut();
-
-    while let Some([(transform1, mut planet1), (transform2, mut planet2)]) = iter.fetch_next() {
-        let direction_to_entity2 =
-            (transform2.translation - transform1.translation).normalize_or_zero();
-
-        let distance = transform1.translation.distance(transform2.translation);
-
-        let mass1 = ((4. / 3.) * PI * planet1.radius.powi(3)) * planet1.density;
-        let mass2 = ((4. / 3.) * PI * planet2.radius.powi(3)) * planet2.density;
-
-        let mut force = calculate_force(mass1, mass2, distance / SIZE_SCALE * DISTANCE_SCALE);
-
-        if distance < (planet1.radius + planet2.radius) * SIZE_SCALE {
-            force = force * (distance / (planet1.radius + planet2.radius) * SIZE_SCALE);
-        }
-
-        planet1.velocity +=
-            ((direction_to_entity2 * force) / mass1) * time.delta_seconds() * TIME_SPEED;
-
-        planet2.velocity +=
-            ((-direction_to_entity2 * force) / mass2) * time.delta_seconds() * TIME_SPEED;
-    }
+    // ceiling plane
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Plane3d::default().mesh().size(10000.0, 10000.0)),
+        material: materials.add(debug_material.clone()),
+        transform: Transform::from_xyz(0., 2500., 0.),
+        ..default()
+    });
 }
 
 fn calculate_acceleration_velocity(
     time: Res<Time>,
     mut planets_query: Query<(&Transform, &mut Planet)>,
+    game_speed: Res<GameSpeed>,
 ) {
-    let dt = time.delta_seconds() * TIME_SPEED;
+    let dt = time.delta_seconds() * TIME_SPEED * game_speed.speed;
     let mut iter = planets_query.iter_combinations_mut();
 
     while let Some([(transform1, mut planet1), (transform2, mut planet2)]) = iter.fetch_next() {
@@ -252,31 +257,15 @@ fn calculate_acceleration_velocity(
     }
 }
 
-// fn integrate(time: Res<Time>, mut planets_query: Query<(&mut Transform, &mut Planet)>) {
-//     let dt_sq = time.delta_seconds() * time.delta_seconds() * TIME_SPEED * TIME_SPEED;
-//     for (mut transform, mut planet) in &mut planets_query {
-//         // verlet integration
-//         // x(t+dt) = 2x(t) - x(t-dt) + a(t)dt^2 + O(dt^4)
-
-//         let new_pos = transform.translation * 2.0 - planet.last_pos + planet.acceleration * dt_sq;
-//         planet.acceleration = Vec3::ZERO;
-//         planet.last_pos = transform.translation;
-//         transform.translation = new_pos;
-//     }
-// }
-
-fn velocity_verlet(time: Res<Time>, mut planets_query: Query<(&mut Transform, &Planet)>) {
-    let dt = time.delta_seconds() * TIME_SPEED;
+fn velocity_verlet(
+    time: Res<Time>,
+    mut planets_query: Query<(&mut Transform, &Planet)>,
+    game_speed: Res<GameSpeed>,
+) {
+    let dt = time.delta_seconds() * TIME_SPEED * game_speed.speed;
 
     for (mut transform, planet) in &mut planets_query {
         transform.translation += planet.velocity * dt + planet.acceleration * (dt * dt * 0.5);
-    }
-}
-
-#[allow(dead_code)]
-fn move_planets(time: Res<Time>, mut planets_query: Query<(&mut Transform, &Planet)>) {
-    for (mut transform, planet) in &mut planets_query {
-        transform.translation += planet.velocity * time.delta_seconds() * TIME_SPEED;
     }
 }
 
@@ -286,7 +275,6 @@ struct Planet {
     density: f32,
     velocity: Vec3,
     acceleration: Vec3,
-    // last_pos: Vec3,
 }
 
 #[derive(Bundle)]
@@ -326,8 +314,78 @@ impl PlanetBundle {
                 density,
                 velocity: initial_velocity.unwrap_or(Vec3::ZERO),
                 acceleration: Vec3::ZERO,
-                // last_pos: transform.translation,
             },
         }
+    }
+}
+
+#[derive(Resource)]
+struct GameSpeed {
+    speed: f32,
+    last_speed: f32,
+}
+
+fn toggle_pause(
+    mut game_speed: ResMut<GameSpeed>,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    // mut virtual_time: ResMut<Time<Virtual>>,
+) {
+    if mouse_buttons.just_pressed(MouseButton::Left) {
+        if game_speed.speed > 0. {
+            game_speed.last_speed = game_speed.speed;
+            game_speed.speed = 0.;
+        } else {
+            game_speed.speed = game_speed.last_speed;
+        }
+    }
+}
+
+fn change_speed(
+    time: Res<Time>,
+    mut game_speed: ResMut<GameSpeed>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    // mut virtual_time: ResMut<Time<Virtual>>,
+) {
+    let mut step = 1.; // per second
+
+    if keyboard_input.pressed(KeyCode::ShiftLeft) {
+        step = 10.;
+    }
+
+    if keyboard_input.pressed(KeyCode::KeyQ) {
+        game_speed.speed -= step * time.delta_seconds();
+    }
+
+    if keyboard_input.pressed(KeyCode::KeyE) {
+        game_speed.speed += step * time.delta_seconds();
+    }
+
+    if keyboard_input.pressed(KeyCode::KeyR) {
+        game_speed.speed = 1.;
+    }
+}
+
+fn spawn_planet_key(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+) {
+    if keyboard_input.pressed(KeyCode::KeyG) {
+        let mut random_g = rand::thread_rng();
+        let x = random_g.gen_range(-1000f32..1000f32);
+        let y = random_g.gen_range(-1000f32..1000f32);
+        let z = random_g.gen_range(-1000f32..1000f32);
+
+        let rgb: [f32; 3] = random_g.gen();
+
+        commands.spawn(PlanetBundle::new(
+            &mut meshes,
+            2500.,
+            2.,
+            materials.add(Color::rgb(rgb[0], rgb[1], rgb[2])),
+            Transform::from_xyz(x, y, z),
+            None,
+        ));
     }
 }

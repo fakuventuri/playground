@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::{
     ecs::query::QuerySingleError,
     input::mouse::MouseMotion,
@@ -78,21 +80,24 @@ fn move_player(
 
     let mut speed = player.base_speed;
     let mut movement = Vec3::ZERO;
+    let local_z = camera_transform.local_z();
+    let forward = -Vec3::new(local_z.x, 0., local_z.z).normalize_or_zero();
+    let right = Vec3::new(local_z.z, 0., -local_z.x).normalize_or_zero();
 
     if keyboard_input.pressed(KeyCode::KeyW) {
-        movement += camera_transform.forward() * 1.;
+        movement += forward;
     }
 
     if keyboard_input.pressed(KeyCode::KeyS) {
-        movement += camera_transform.back() * 1.;
+        movement += -forward;
     }
 
     if keyboard_input.pressed(KeyCode::KeyD) {
-        movement += camera_transform.right() * 1.;
+        movement += right;
     }
 
     if keyboard_input.pressed(KeyCode::KeyA) {
-        movement += camera_transform.left() * 1.;
+        movement += -right;
     }
 
     if keyboard_input.pressed(KeyCode::Space) {
@@ -121,8 +126,7 @@ fn mouse_motion(
 ) {
     let primary_window = window_query.single();
 
-    if let CursorGrabMode::Locked = primary_window.cursor.grab_mode {
-    } else {
+    if primary_window.cursor.grab_mode != CursorGrabMode::Locked {
         return;
     }
 
@@ -140,9 +144,11 @@ fn mouse_motion(
 
         let (mut yaw, mut pitch, _) = camera_transform.rotation.to_euler(EulerRot::YXZ);
 
-        pitch -= rotation_move.y / window_scale * std::f32::consts::PI * MOUSE_SENSITIVITY;
-        yaw -= rotation_move.x / window_scale * std::f32::consts::PI * MOUSE_SENSITIVITY;
-        pitch = pitch.clamp(-1.57, 1.57); // 1.54 recomended // I reached aprox 1.57
+        yaw -= rotation_move.x / window_scale * PI * MOUSE_SENSITIVITY;
+        pitch -= rotation_move.y / window_scale * PI * MOUSE_SENSITIVITY;
+
+        pitch = pitch.clamp(-1.56, 1.56); // PI / 2.
+
         camera_transform.rotation =
             Quat::from_axis_angle(Vec3::Y, yaw) * Quat::from_axis_angle(Vec3::X, pitch);
     }
@@ -156,13 +162,13 @@ fn cursor_grab(
         let mut primary_window = q_windows.single_mut();
 
         match primary_window.cursor.grab_mode {
-            CursorGrabMode::Locked => {
-                primary_window.cursor.grab_mode = CursorGrabMode::None;
-                primary_window.cursor.visible = true;
-            }
             CursorGrabMode::None => {
                 primary_window.cursor.grab_mode = CursorGrabMode::Locked;
                 primary_window.cursor.visible = false;
+            }
+            CursorGrabMode::Locked => {
+                primary_window.cursor.grab_mode = CursorGrabMode::None;
+                primary_window.cursor.visible = true;
             }
             CursorGrabMode::Confined => {
                 primary_window.cursor.grab_mode = CursorGrabMode::None;
